@@ -51,6 +51,7 @@ DEFAULT_CONFIG = {
         "geoip_path": "data/geoip.metadb",
     },
     "proxy": {
+        "mode": "ssh",
         "ssh_host": "",
         "label": "Mihomo",
         "mihomo_config": "/opt/1panel/apps/mihomo/mihomo/config.yaml",

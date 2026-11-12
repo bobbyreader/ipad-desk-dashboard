@@ -1,7 +1,9 @@
 """Read-only LAN dashboard for older iPads; cross-platform (macOS/Windows/Linux)."""
+import http.client
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 from pathlib import Path
+import socket
 import subprocess
 import time
 from urllib.parse import parse_qs, urlsplit
@@ -38,14 +40,56 @@ def feature_enabled(name: str) -> bool:
     return bool((SETTINGS.get("features") or {}).get(name))
 
 
+class _UnixHTTPConnection(http.client.HTTPConnection):
+    """Minimal HTTP-over-Unix-socket client for /var/run/docker.sock."""
+
+    def __init__(self, socket_path: str, timeout: float = 4.0) -> None:
+        super().__init__('localhost', timeout=timeout)
+        self.socket_path = socket_path
+
+    def connect(self) -> None:
+        sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        sock.settimeout(self.timeout)
+        sock.connect(self.socket_path)
+        self.sock = sock
+
+
+def docker_socket_status(socket_path: str = '/var/run/docker.sock') -> dict:
+    """Query Docker Engine API directly over Unix socket without docker CLI."""
+    conn = _UnixHTTPConnection(socket_path, timeout=4.0)
+    try:
+        conn.request('GET', '/containers/json?all=true')
+        resp = conn.getresponse()
+        if resp.status != 200:
+            return {"available": False, "message": "Docker Socket 返回异常", "containers": []}
+        rows = json.loads(resp.read(2097152).decode('utf-8', 'replace'))
+        containers = []
+        for row in rows:
+            names = row.get('Names') or []
+            name = str(names[0]).lstrip('/') if names else str(row.get('Id', ''))[:12]
+            containers.append({
+                "name": name,
+                "status": str(row.get('Status') or ''),
+                "state": str(row.get('State') or ''),
+            })
+        return {"available": True, "containers": containers}
+    except (OSError, http.client.HTTPException, ValueError, KeyError):
+        return {"available": False, "message": "Docker Socket 不可用", "containers": []}
+    finally:
+        conn.close()
+
+
 def docker_status() -> dict:
-    """Return container summaries from local Docker or remote SSH, or disabled."""
+    """Return container summaries from local Docker/socket or remote SSH, or disabled."""
     if not feature_enabled("docker"):
         return {"available": False, "disabled": True, "message": "Docker 监控未启用", "containers": []}
     docker_cfg = SETTINGS.get("docker") or {}
     mode = str(docker_cfg.get("mode") or "local").strip().lower()
+    sock_path = str(docker_cfg.get("socket_path") or "/var/run/docker.sock").strip()
     if mode == "off":
         return {"available": False, "disabled": True, "message": "Docker 监控已关闭", "containers": []}
+    if mode == "socket":
+        return docker_socket_status(sock_path)
     if mode == "ssh":
         ssh_host = str(docker_cfg.get("ssh_host") or "").strip()
         if not ssh_host:
@@ -72,6 +116,10 @@ def docker_status() -> dict:
                 for row in rows
             ],
         }
+    except FileNotFoundError:
+        if mode == "local" and Path(sock_path).exists():
+            return docker_socket_status(sock_path)
+        return {"available": False, "message": fail_msg, "containers": []}
     except (OSError, subprocess.TimeoutExpired, ValueError, KeyError):
         return {"available": False, "message": fail_msg, "containers": []}
 

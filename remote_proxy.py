@@ -1,4 +1,4 @@
-"""Executed over SSH stdin; keep the Mihomo secret on its existing host."""
+"""Executed over SSH stdin or imported locally; keep the Mihomo secret on its host."""
 import json
 from pathlib import Path
 import re
@@ -9,14 +9,14 @@ CONFIG_PATH = globals().get('CONFIG_PATH', '/opt/1panel/apps/mihomo/mihomo/confi
 API_URL = globals().get('API_URL', 'http://127.0.0.1:9090/connections')
 
 
-def collect() -> dict:
+def collect(config_path: str | None = None, api_url: str | None = None) -> dict:
     """Read the loopback API and return only counters and geolocation inputs."""
-    raw = Path(CONFIG_PATH).read_text()
+    raw = Path(config_path or CONFIG_PATH).read_text(encoding='utf-8')
     match = re.search(r'^secret:\s*(.*)$', raw, re.M)
     parts = shlex.split(match.group(1), comments=True) if match else []
     secret = parts[0] if parts else ''
     headers = {'Authorization': 'Bearer ' + secret} if secret else {}
-    request = urllib.request.Request(API_URL, headers=headers)
+    request = urllib.request.Request(api_url or API_URL, headers=headers)
     with urllib.request.urlopen(request, timeout=3) as response:
         data = json.load(response)
     return {

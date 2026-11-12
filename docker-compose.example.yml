@@ -1,0 +1,16 @@
+services:
+  ipad-dashboard:
+    build: .
+    container_name: ipad-desk-dashboard
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./config.json:/app/config.json:ro
+      - ./stations.json:/app/stations.json:ro
+      - ./data:/app/data:ro
+      # Optional: read-only Docker socket when features.docker=true and docker.mode="socket"
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      # Optional: read-only SSH keys for side-router telemetry (features.router=true)
+      # - /root/.ssh:/root/.ssh:ro
+      # Optional: read-only Mihomo config directory when proxy.mode="local"
+      # - /opt/1panel/apps/mihomo/mihomo:/opt/1panel/apps/mihomo/mihomo:ro

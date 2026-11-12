@@ -47,8 +47,15 @@ class ProxyTests(unittest.TestCase):
         self.assertEqual(empty['countries'], [])
         self.assertEqual(empty['connections'], 0)
 
+    def test_local_mode_collect(self):
+        with patch.dict(SETTINGS['proxy'], {'mode': 'local', 'mihomo_config': '/tmp/c.yaml', 'mihomo_api': 'http://127.0.0.1:9090/connections'}):
+            with patch('proxy_monitor.remote_proxy.collect', return_value=self.raw()) as col:
+                self.monitor.poll()
+        col.assert_called_once()
+        self.assertTrue(self.monitor.snapshot()['available'])
+
     def test_unconfigured_ssh_host(self):
-        with patch.dict(SETTINGS['proxy'], {'ssh_host': ''}):
+        with patch.dict(SETTINGS['proxy'], {'mode': 'ssh', 'ssh_host': ''}):
             self.monitor.poll()
         self.assertFalse(self.monitor.snapshot()['available'])
         self.assertIn('未配置', self.monitor.snapshot()['message'])

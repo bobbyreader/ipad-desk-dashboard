@@ -56,6 +56,13 @@ class StatusTests(unittest.TestCase):
         with patch.dict(SETTINGS['features'], {'docker': True}), patch.dict(SETTINGS['docker'], {'mode': 'local'}):
             self.assertFalse(server.docker_status()['available'])
 
+    @patch("server.docker_socket_status", return_value={"available": True, "containers": [{"name": "c1", "status": "Up", "state": "running"}]})
+    def test_socket_docker_mode(self, sock):
+        with patch.dict(SETTINGS['features'], {'docker': True}), patch.dict(SETTINGS['docker'], {'mode': 'socket'}):
+            result = server.docker_status()
+        self.assertTrue(result['available'])
+        self.assertEqual(result['containers'][0]['name'], 'c1')
+
     @patch("server.docker_status", return_value={"available": False})
     def test_host_snapshot(self, docker):
         host = server.snapshot()['host']

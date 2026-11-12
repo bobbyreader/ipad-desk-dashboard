@@ -8,6 +8,7 @@ import threading
 import time
 
 from geo_places import PLACES
+import remote_proxy
 from settings import SETTINGS
 
 ROOT = Path(__file__).resolve().parent
@@ -97,9 +98,27 @@ class ProxyMonitor:
                 'history': list(self.history), 'geo_available': self.reader is not None}
 
     def poll(self) -> None:
-        """Fetch a sanitized remote snapshot, preserving failure as an explicit state."""
+        """Fetch a sanitized snapshot (local or via SSH), preserving failure explicitly."""
         cfg = SETTINGS.get('proxy') or {}
+        mode = str(cfg.get('mode') or 'ssh').strip().lower()
         ssh_host = str(cfg.get('ssh_host') or '').strip()
+        config_path = str(cfg.get('mihomo_config') or '/opt/1panel/apps/mihomo/mihomo/config.yaml').strip()
+        api_url = str(cfg.get('mihomo_api') or 'http://127.0.0.1:9090/connections').strip()
+        if not api_url.startswith(('http://', 'https://')):
+            api_url = 'http://127.0.0.1:9090/connections'
+
+        if mode == 'local':
+            try:
+                raw = remote_proxy.collect(config_path=config_path, api_url=api_url)
+                data = self.ingest(raw, time.monotonic())
+            except (OSError, ValueError, KeyError, TypeError):
+                self.previous = None
+                self.history = []
+                data = {'available': False, 'message': '代理核心暂不可达', 'updated': time.time()}
+            with self.lock:
+                self.data = data
+            return
+
         if not ssh_host:
             self.previous = None
             self.history = []
@@ -107,10 +126,6 @@ class ProxyMonitor:
                 self.data = {'available': False, 'message': '代理监控未配置（请设置 proxy.ssh_host）',
                              'updated': time.time()}
             return
-        config_path = str(cfg.get('mihomo_config') or '/opt/1panel/apps/mihomo/mihomo/config.yaml').strip()
-        api_url = str(cfg.get('mihomo_api') or 'http://127.0.0.1:9090/connections').strip()
-        if not api_url.startswith(('http://', 'https://')):
-            api_url = 'http://127.0.0.1:9090/connections'
         preamble = f"CONFIG_PATH = {json.dumps(config_path)}\nAPI_URL = {json.dumps(api_url)}\n"
         script = preamble + (ROOT / 'remote_proxy.py').read_text(encoding='utf-8')
         try:

@@ -214,6 +214,18 @@
 }
 ```
 
+### 6. Docker 容器化集中部署（适合 Homelab / NAS 7×24 运行）
+
+仓库自带 `Dockerfile` 与 `docker-compose.example.yml`，可直接部署在一直开机的 Linux / PVE / NAS 主机上：
+
+```sh
+cp config.example.json config.json
+cp docker-compose.example.yml docker-compose.yml
+docker compose up -d --build
+```
+
+- 在容器内可将 `docker.mode` 设为 `"socket"`（只读挂载 `/var/run/docker.sock`），将 `proxy.mode` 设为 `"local"`（`network_mode: host` 下直连本机 Mihomo），无需再通过 SSH 绕回宿主机。
+
 ---
 
 ## 六、安全与边界
