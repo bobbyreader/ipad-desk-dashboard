@@ -1,14 +1,17 @@
 /* Library panel for iOS 12: ES5 and same-origin XHR. */
-window.initLibraryPanel = function (playLibrarySong, store) {
+window.initLibraryPanel = function (playLibrarySong, store, addToPlaylist, onOpenPlaylist) {
   'use strict';
   var cfg = window.DASHBOARD_CONFIG || {};
   var features = cfg.features || {};
-  var enabled = !!features.library;
+  var hasLibrary = !!features.library;
+  var hasPlaylist = hasLibrary || features.music_search !== false;
   var tabsBar = document.getElementById('radio-tabs-bar');
   var tabRadio = document.getElementById('tab-radio');
   var tabLibrary = document.getElementById('tab-library');
+  var tabPlaylist = document.getElementById('tab-playlist');
   var paneRadio = document.getElementById('pane-radio');
   var paneLibrary = document.getElementById('pane-library');
+  var panePlaylist = document.getElementById('pane-playlist');
   var libQ = document.getElementById('lib-q');
   var libState = document.getElementById('lib-state');
   var libList = document.getElementById('lib-list');
@@ -22,13 +25,11 @@ window.initLibraryPanel = function (playLibrarySong, store) {
   if (libHint && cfg.library && cfg.library.hint) {
     libHint.textContent = cfg.library.hint;
   }
-  if (!enabled) {
-    if (tabsBar) { tabsBar.hidden = true; }
-    if (tabLibrary) { tabLibrary.hidden = true; }
-    if (paneLibrary) { paneLibrary.hidden = true; }
-    if (paneRadio) { paneRadio.hidden = false; }
-    return function () {};
-  }
+  if (tabsBar) { tabsBar.hidden = !hasPlaylist; }
+  if (tabLibrary) { tabLibrary.hidden = !hasLibrary; }
+  if (!hasLibrary && paneLibrary) { paneLibrary.hidden = true; }
+  if (tabPlaylist) { tabPlaylist.hidden = !hasPlaylist; }
+  if (!hasPlaylist && panePlaylist) { panePlaylist.hidden = true; }
 
   function makeRow(main, meta, disabled) {
     var row = document.createElement('button');
@@ -118,15 +119,38 @@ window.initLibraryPanel = function (playLibrarySong, store) {
 
   function renderSongs(songs) {
     clearNode(libList);
+    var playableList = songs.filter(function (s) { return !!s.playable; });
     songs.forEach(function (song) {
       var meta = song.playable
         ? (song.duration ? Math.floor(song.duration / 60) + ':' + ('0' + (song.duration % 60)).slice(-2) : '')
         : '格式不支持';
+      var wrap = document.createElement('div');
+      wrap.className = 'track-item';
       var row = makeRow(song.title, meta, !song.playable);
       if (song.playable) {
-        row.onclick = function () { playLibrarySong(song); };
+        row.onclick = function () { playLibrarySong(song, playableList); };
       }
-      libList.appendChild(row);
+      wrap.appendChild(row);
+      if (song.playable && addToPlaylist) {
+        var addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'track-add';
+        addBtn.textContent = '+';
+        addBtn.setAttribute('aria-label', '加入歌单');
+        addBtn.onclick = function (e) {
+          e.stopPropagation();
+          addToPlaylist({
+            id: song.id,
+            name: song.title,
+            artist: song.artist || '',
+            source: 'library'
+          });
+          addBtn.textContent = '✓';
+          setTimeout(function () { addBtn.textContent = '+'; }, 900);
+        };
+        wrap.appendChild(addBtn);
+      }
+      libList.appendChild(wrap);
     });
     if (!songs.length) { libState.textContent = '这张专辑没有可播放的曲目'; }
   }
@@ -152,17 +176,25 @@ window.initLibraryPanel = function (playLibrarySong, store) {
   }
 
   function setTab(name) {
-    var library = name === 'library';
-    tabRadio.setAttribute('aria-pressed', library ? 'false' : 'true');
-    tabLibrary.setAttribute('aria-pressed', library ? 'true' : 'false');
-    paneRadio.hidden = library;
-    paneLibrary.hidden = !library;
-    store('radio.tab', library ? 'library' : 'radio');
-    if (library && !libAlbums) { loadAlbums(); }
+    if (name === 'library' && !hasLibrary) { name = 'radio'; }
+    if (name === 'playlist' && !hasPlaylist) { name = 'radio'; }
+    var isLib = name === 'library';
+    var isPl = name === 'playlist';
+    var isRad = !isLib && !isPl;
+    if (tabRadio) { tabRadio.setAttribute('aria-pressed', isRad ? 'true' : 'false'); }
+    if (tabLibrary) { tabLibrary.setAttribute('aria-pressed', isLib ? 'true' : 'false'); }
+    if (tabPlaylist) { tabPlaylist.setAttribute('aria-pressed', isPl ? 'true' : 'false'); }
+    if (paneRadio) { paneRadio.hidden = !isRad; }
+    if (paneLibrary) { paneLibrary.hidden = !isLib; }
+    if (panePlaylist) { panePlaylist.hidden = !isPl; }
+    store('radio.tab', name);
+    if (isLib && !libAlbums) { loadAlbums(); }
+    if (isPl && onOpenPlaylist) { onOpenPlaylist(); }
   }
 
-  tabRadio.onclick = function () { setTab('radio'); };
-  tabLibrary.onclick = function () { setTab('library'); };
+  if (tabRadio) { tabRadio.onclick = function () { setTab('radio'); }; }
+  if (tabLibrary) { tabLibrary.onclick = function () { setTab('library'); }; }
+  if (tabPlaylist) { tabPlaylist.onclick = function () { setTab('playlist'); }; }
   libBack.onclick = function () { renderAlbums(); };
   libQ.oninput = function () {
     var query = libQ.value.trim();

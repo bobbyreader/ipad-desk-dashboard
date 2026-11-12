@@ -87,7 +87,8 @@ a{color:var(--link)}.infra-link{display:inline-block;padding:8px;min-height:44px
 .radio-now{flex:1 1 auto;min-width:0;margin-left:10px}
 #radio-station{display:block;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #radio-state{display:block;font-size:11px;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.radio-more{flex:0 0 auto;margin-left:8px;font-size:13px;padding:6px 12px;min-height:36px}
+.radio-more,.radio-next{flex:0 0 auto;margin-left:8px;font-size:13px;padding:6px 12px;min-height:36px}
+.radio-next{padding:6px 10px}
 .radio-sheet{position:fixed;top:0;right:0;bottom:0;left:0;z-index:60;display:flex;align-items:center;justify-content:center;padding:24px;background:rgba(0,0,0,.4)}
 .radio-sheet-inner{width:100%;max-width:680px;max-height:80vh;overflow:auto;padding:20px;border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--text)}
 .radio-sheet-head{display:flex;align-items:center;justify-content:space-between}
@@ -130,5 +131,13 @@ a{color:var(--link)}.infra-link{display:inline-block;padding:8px;min-height:44px
 .lib-cover{position:relative;flex:0 0 44px;width:44px;height:44px;margin-right:10px;border-radius:5px;background:var(--btn);text-align:center;line-height:44px}
 .lib-cover img{position:absolute;left:0;top:0;width:44px;height:44px;object-fit:cover}
 .lib-album-row small{max-width:36%;overflow:hidden;text-overflow:ellipsis}
-#lib-list{max-height:320px}
-@media(max-width:700px){#lib-list{max-height:250px}}
+#lib-list,#pl-list{max-height:320px}
+@media(max-width:700px){#lib-list,#pl-list{max-height:250px}}
+.track-item{display:flex;align-items:center;border-top:1px solid var(--line-soft)}
+.track-item:first-child{border-top:0}
+.track-item>.music-result,.track-item>.lib-row{flex:1 1 auto;min-width:0;border-top:0}
+.track-add,.track-del{flex:0 0 40px;min-height:38px;padding:0;margin-right:4px;font-size:16px;background:transparent;border:0;color:var(--text-3)}
+.track-add:active,.track-del:active{color:var(--accent)}
+.playlist-actions{display:flex;align-items:center;margin:8px 0 4px}
+.playlist-actions button{min-height:34px;padding:5px 12px;font-size:13px}
+#pl-state{flex:1 1 auto;margin:0 10px;font-size:12px;color:var(--text-3)}

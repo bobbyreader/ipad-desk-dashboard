@@ -1,5 +1,4 @@
-/* Radio player: the <audio> element is created once and never rebuilt, so the
-   dashboard's 3-30s data polling can never interrupt playback. ES5 for iOS 12. */
+/* Radio & music player: single <audio> instance, auto-advance queue and local playlist. ES5 for iOS 12. */
 (function () {
   'use strict';
   var cfg = window.DASHBOARD_CONFIG || {};
@@ -8,6 +7,7 @@
 
   var audio = document.getElementById('radio-audio');
   var playButton = document.getElementById('radio-play');
+  var nextButton = document.getElementById('radio-next');
   var stationLabel = document.getElementById('radio-station');
   var stateLabel = document.getElementById('radio-state');
   var sheet = document.getElementById('radio-sheet');
@@ -18,15 +18,15 @@
   var searchInput = document.getElementById('music-q');
   var searchState = document.getElementById('music-state');
   var searchResults = document.getElementById('music-results');
-  var setTab = window.initLibraryPanel(playLibrarySong, store);
-
-  if (features.music_search === false) {
-    if (searchBox) { searchBox.hidden = true; }
-    if (searchResults) { searchResults.hidden = true; }
-  }
+  var plList = document.getElementById('pl-list');
+  var plState = document.getElementById('pl-state');
+  var plPlayAll = document.getElementById('pl-play-all');
+  var plClear = document.getElementById('pl-clear');
 
   var stations = [];
   var current = null;
+  var queue = [];
+  var queueIndex = -1;
   var attempts = 0;
   var retryTimer = null;
   var fadeTimer = null;
@@ -50,7 +50,99 @@
     return null;
   }
 
+  function loadPlaylist() {
+    try {
+      var raw = JSON.parse(load('radio.playlist', '[]') || '[]');
+      return Array.isArray(raw) ? raw : [];
+    } catch (err) { return []; }
+  }
+  function savePlaylist(items) {
+    store('radio.playlist', JSON.stringify(items.slice(0, 200)));
+  }
+
+  function addToPlaylist(track) {
+    if (!track || !track.id) { return; }
+    var items = loadPlaylist();
+    var exists = items.some(function (it) { return it.id === track.id && it.source === track.source; });
+    if (!exists) {
+      items.push({
+        id: track.id,
+        name: track.name || '未命名',
+        artist: track.artist || '',
+        source: track.source || 'online'
+      });
+      savePlaylist(items);
+    }
+    renderPlaylist();
+  }
+
+  function removeFromPlaylist(index) {
+    var items = loadPlaylist();
+    items.splice(index, 1);
+    savePlaylist(items);
+    renderPlaylist();
+  }
+
+  function renderPlaylist() {
+    if (!plList) { return; }
+    var items = loadPlaylist();
+    while (plList.firstChild) { plList.removeChild(plList.firstChild); }
+    if (plState) { plState.textContent = items.length + ' 首'; }
+    if (plPlayAll) { plPlayAll.disabled = !items.length; }
+    if (plClear) { plClear.disabled = !items.length; }
+    if (!items.length) {
+      var empty = document.createElement('p');
+      empty.className = 'hint';
+      empty.style.padding = '10px 12px';
+      empty.textContent = '歌单为空 · 在音乐库或在线搜索点击 + 加入';
+      plList.appendChild(empty);
+      return;
+    }
+    items.forEach(function (item, index) {
+      var wrap = document.createElement('div');
+      wrap.className = 'track-item';
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'music-result';
+      var name = document.createElement('span');
+      name.textContent = item.name;
+      var meta = document.createElement('small');
+      meta.textContent = item.artist || (item.source === 'library' ? '音乐库' : '在线');
+      btn.appendChild(name);
+      btn.appendChild(meta);
+      btn.onclick = function () {
+        closeSheet();
+        playTrackQueue(items, index);
+      };
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'track-del';
+      del.textContent = '✕';
+      del.setAttribute('aria-label', '从歌单移除');
+      del.onclick = function (e) {
+        e.stopPropagation();
+        removeFromPlaylist(index);
+      };
+      wrap.appendChild(btn);
+      wrap.appendChild(del);
+      plList.appendChild(wrap);
+    });
+  }
+
+  var setTab = window.initLibraryPanel(playLibrarySong, store, addToPlaylist, renderPlaylist);
+
+  if (features.music_search === false) {
+    if (searchBox) { searchBox.hidden = true; }
+    if (searchResults) { searchResults.hidden = true; }
+  }
+
   function setState(text) { stateLabel.textContent = text; }
+
+  function updateNextButton() {
+    if (!nextButton) { return; }
+    var hasNext = !!(current && current.kind === 'track' && queue.length > 1 && queueIndex >= 0 && queueIndex + 1 < queue.length);
+    nextButton.hidden = !hasNext;
+  }
 
   function setPlaying(playing) {
     audio.setAttribute('aria-pressed', playing ? 'true' : 'false');
@@ -58,6 +150,7 @@
     playButton.setAttribute('aria-pressed', playing ? 'true' : 'false');
     playButton.setAttribute('aria-label', playing ? '暂停广播' : '播放广播');
     document.body.classList[playing ? 'add' : 'remove']('radio-playing');
+    updateNextButton();
   }
 
   function fadeTo(level) {
@@ -84,8 +177,11 @@
 
   function showStation(station) {
     current = station;
+    queue = [];
+    queueIndex = -1;
     if (station) { station.kind = 'station'; }
     stationLabel.textContent = station ? station.name : '未选择电台';
+    updateNextButton();
     if (!station) { setState('点一下开始播放'); return; }
     var health = station.health || {};
     if (health.status === 'fail') { setState('上次探测不可达，仍可尝试'); }
@@ -163,6 +259,11 @@
       var resolved = null;
       try { resolved = JSON.parse(xhr.responseText); } catch (err) {}
       if (!resolved || !resolved.available || !resolved.url) {
+        if (queue.length > 1 && queueIndex + 1 < queue.length) {
+          setState('当前曲目不可用，跳到下一首…');
+          setTimeout(playNextInQueue, 600);
+          return;
+        }
         setPlaying(false);
         wanted = false;
         remember();
@@ -223,17 +324,57 @@
     return item.kind === 'track' && item.artist ? item.name + ' · ' + item.artist : item.name;
   }
 
-  function chooseTrack(item) {
-    closeSheet();
+  function normalizeTrack(item, defaultSource) {
+    return {
+      kind: 'track',
+      id: item.id,
+      name: item.name || item.title || '未命名',
+      artist: item.artist || '',
+      source: item.source || defaultSource || 'online',
+      url: ''
+    };
+  }
+
+  function playTrackQueue(list, index) {
     stopTimers();
+    queue = (list || []).map(function (it) { return normalizeTrack(it, it.source); });
+    queueIndex = index >= 0 && index < queue.length ? index : 0;
+    if (!queue.length) { return; }
     wanted = true;
     attempts = 0;
     setPlaying(false);
-    stationLabel.textContent = labelOf({kind: 'track', name: item.name, artist: item.artist});
-    current = {kind: 'track', id: item.id, name: item.name, artist: item.artist, url: ''};
+    current = normalizeTrack(queue[queueIndex], queue[queueIndex].source);
+    stationLabel.textContent = labelOf(current);
+    updateNextButton();
     remember();
     startTrack(current);
-    titleTimer = setInterval(pollTitle, 20000);
+  }
+
+  function playNextInQueue() {
+    if (!queue.length || queueIndex + 1 >= queue.length) {
+      wanted = false;
+      remember();
+      setPlaying(false);
+      setState('队列已播完');
+      return;
+    }
+    queueIndex += 1;
+    attempts = 0;
+    current = normalizeTrack(queue[queueIndex], queue[queueIndex].source);
+    stationLabel.textContent = labelOf(current);
+    updateNextButton();
+    remember();
+    startTrack(current);
+  }
+
+  function chooseTrack(item, list) {
+    closeSheet();
+    var items = (list && list.length) ? list : [item];
+    var idx = 0;
+    items.forEach(function (it, i) { if (it.id === item.id) { idx = i; } });
+    playTrackQueue(items.map(function (it) {
+      return {id: it.id, name: it.name, artist: it.artist || '', source: 'online'};
+    }), idx);
   }
 
   function choose(id) {
@@ -253,7 +394,10 @@
     attempts = 0;
     setPlaying(true);
     if (current) { stationLabel.textContent = labelOf(current); }
-    setState(current && current.codec === 'hls' ? '播放中 · HLS' : '播放中');
+    var suffix = (current && current.kind === 'track' && queue.length > 1 && queueIndex >= 0)
+      ? (' · ' + (queueIndex + 1) + '/' + queue.length)
+      : '';
+    setState((current && current.codec === 'hls' ? '播放中 · HLS' : '播放中') + suffix);
     fadeTo(targetVolume);
     pollTitle();
   }, false);
@@ -262,6 +406,11 @@
   }, false);
   audio.addEventListener('pause', function () {
     if (!wanted) { setPlaying(false); }
+  }, false);
+  audio.addEventListener('ended', function () {
+    if (current && current.kind === 'track') {
+      playNextInQueue();
+    }
   }, false);
   audio.addEventListener('error', function () {
     if (!wanted) { return; }
@@ -282,6 +431,23 @@
   playButton.onclick = function () {
     if (wanted && !audio.paused) { pause(); } else { play(); }
   };
+  if (nextButton) {
+    nextButton.onclick = function () { playNextInQueue(); };
+  }
+  if (plPlayAll) {
+    plPlayAll.onclick = function () {
+      var items = loadPlaylist();
+      if (!items.length) { return; }
+      closeSheet();
+      playTrackQueue(items, 0);
+    };
+  }
+  if (plClear) {
+    plClear.onclick = function () {
+      savePlaylist([]);
+      renderPlaylist();
+    };
+  }
 
   var searchTimer = null;
   var searchSeq = 0;
@@ -292,6 +458,8 @@
     while (searchResults.firstChild) { searchResults.removeChild(searchResults.firstChild); }
     if (!items.length) { searchResults.hidden = true; return; }
     items.forEach(function (item) {
+      var wrap = document.createElement('div');
+      wrap.className = 'track-item';
       var button = document.createElement('button');
       button.type = 'button';
       button.className = 'music-result';
@@ -301,8 +469,21 @@
       meta.textContent = item.artist || '';
       button.appendChild(name);
       button.appendChild(meta);
-      button.onclick = function () { chooseTrack(item); };
-      searchResults.appendChild(button);
+      button.onclick = function () { chooseTrack(item, items); };
+      var addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'track-add';
+      addBtn.textContent = '+';
+      addBtn.setAttribute('aria-label', '加入歌单');
+      addBtn.onclick = function (e) {
+        e.stopPropagation();
+        addToPlaylist({id: item.id, name: item.name, artist: item.artist || '', source: 'online'});
+        addBtn.textContent = '✓';
+        setTimeout(function () { addBtn.textContent = '+'; }, 900);
+      };
+      wrap.appendChild(button);
+      wrap.appendChild(addBtn);
+      searchResults.appendChild(wrap);
     });
     searchResults.hidden = false;
   }
@@ -346,23 +527,20 @@
     };
   }
 
-  function playLibrarySong(song) {
+  function playLibrarySong(song, list) {
     closeSheet();
-    stopTimers();
-    wanted = true;
-    attempts = 0;
-    setPlaying(false);
-    current = {kind: 'track', source: 'library', id: song.id, name: song.title,
-               artist: song.artist || '', url: ''};
-    stationLabel.textContent = labelOf(current);
-    remember();
-    startTrack(current);
-    titleTimer = setInterval(pollTitle, 20000);
+    var items = (list && list.length) ? list : [song];
+    var idx = 0;
+    items.forEach(function (it, i) { if (it.id === song.id) { idx = i; } });
+    playTrackQueue(items.map(function (it) {
+      return {id: it.id, name: it.title, artist: it.artist || '', source: 'library'};
+    }), idx);
   }
 
   function openSheet() {
     sheet.hidden = false;
-    setTab(features.library ? load('radio.tab', 'radio') : 'radio');
+    var savedTab = load('radio.tab', 'radio');
+    setTab(savedTab);
     listToggle.setAttribute('aria-expanded', 'true');
     var first = groups.querySelector('button');
     if (first) { first.focus(); }
@@ -442,6 +620,7 @@
   var savedStation = load('radio.station', '');
   var wasWanted = load('radio.wanted', '0') === '1';
 
+  renderPlaylist();
   loadStations();
   setInterval(loadStations, 600000);
 
@@ -460,6 +639,7 @@
                    ? '/api/library/audio?id=' + encodeURIComponent(savedTrack.id) : ''};
       stationLabel.textContent = savedTrack.name + (savedTrack.artist ? ' · ' + savedTrack.artist : '');
       setPlaying(false);
+      updateNextButton();
       setState(wasWanted ? '点击继续播放' : '已暂停');
       return;
     }
