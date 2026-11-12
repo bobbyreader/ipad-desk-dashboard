@@ -1,0 +1,58 @@
+{
+  "site": {
+    "title": "桌边控制屏",
+    "subtitle": "",
+    "greeting": "留一块屏，给日常。",
+    "links_title": "常用入口",
+    "links_lead": "快捷入口沿用各自站点的登录方式，这里只提供跳转卡片。",
+    "links": [
+      {
+        "title": "示例站点",
+        "desc": "在 config.json 的 site.links 中自定义",
+        "url": "https://example.com"
+      }
+    ]
+  },
+  "server": {
+    "host": "0.0.0.0",
+    "port": 8788
+  },
+  "features": {
+    "host": true,
+    "aihot": true,
+    "readhub": true,
+    "radio": true,
+    "music_search": true,
+    "docker": false,
+    "router": false,
+    "proxy": false,
+    "library": false,
+    "links": false
+  },
+  "docker": {
+    "mode": "local",
+    "label": "Docker",
+    "ssh_host": "",
+    "admin_url": ""
+  },
+  "router": {
+    "ssh_host": "",
+    "interface": "eth0",
+    "lan_cidr": "192.168.1.0/24",
+    "aliases": {},
+    "geoip_path": "data/geoip.metadb"
+  },
+  "proxy": {
+    "ssh_host": "",
+    "label": "Mihomo",
+    "mihomo_config": "/opt/1panel/apps/mihomo/mihomo/config.yaml",
+    "mihomo_api": "http://127.0.0.1:9090/connections",
+    "geoip_path": "data/geoip.metadb"
+  },
+  "library": {
+    "url": "",
+    "user": "",
+    "password": "",
+    "hint": "浏览本地 Navidrome 音乐库 · 点选专辑或搜索曲目。"
+  }
+}

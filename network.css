@@ -1,0 +1,107 @@
+.network{max-width:1440px;margin:0 auto;padding:28px 36px 24px;background:var(--panel);border-bottom:1px solid var(--line)}
+.network-heading{display:flex;justify-content:space-between;align-items:center}
+.network-heading h1{font-size:28px;letter-spacing:2px;margin:0}
+.network-heading p{font-size:15px;margin:5px 0;color:var(--text-3)}
+.network-layout{display:flex;align-items:center;margin-top:16px}
+.map-area{width:76%;position:relative}
+#world-map{display:block;width:100%;height:auto;aspect-ratio:1000/440}
+.map-legend{display:flex;justify-content:space-between;font-size:12px;color:var(--text-3);padding:0 12px}
+.map-legend span:first-child{color:var(--accent)}
+.network-numbers{width:24%;padding-left:26px;border-left:1px solid var(--line)}
+.speed{margin:0 0 18px}
+.speed span,.connection-count span{display:block;font-size:15px;color:var(--text-3)}
+.speed strong{display:block;color:var(--accent);font-size:29px;font-weight:500;font-variant-numeric:tabular-nums;white-space:nowrap}
+.speed.upload strong{color:var(--accent-2)}
+.connection-count{display:flex;justify-content:space-between;align-items:center}
+.connection-count strong{font-size:27px;font-weight:500}
+#traffic-chart{width:100%;height:65px;display:block;margin-top:12px}
+#proxy-totals{font-size:12px;color:var(--text-3);margin:8px 0}
+.network-bottom{margin-top:18px}
+#proxy-regions{font-size:16px;color:var(--text);min-height:24px;margin:0 0 8px}
+.network-bottom .hint{font-size:12px;margin:4px 0}
+.source-switch{display:flex;align-items:center;flex-wrap:wrap;margin-top:12px}
+.source-switch button{margin-right:8px;background:transparent}
+.source-switch button[aria-pressed="true"]{background:var(--btn-active);border-color:var(--accent)}
+#map-filter{font-size:13px;color:var(--text-2);margin:8px 0 8px 12px}
+.device-panel{margin-top:20px;border-top:1px solid var(--line);padding-top:12px}
+.device-heading{display:flex;align-items:center;justify-content:space-between}
+.device-heading h2{font-size:20px}
+.device-panel .hint{font-size:12px;margin:6px 0}
+.device-scroll{max-height:190px;overflow:auto;-webkit-overflow-scrolling:touch}
+.device-scroll table{width:100%;border-collapse:collapse;font-size:14px;text-align:left;table-layout:fixed}
+.device-scroll th{font-weight:400;color:var(--text-3);padding:6px 8px;white-space:nowrap}
+.device-scroll th:first-child{width:46%}
+.device-scroll th:nth-child(2){width:38%}
+.device-scroll td{padding:2px 8px;border-top:1px solid var(--line-soft)}
+.device-scroll td:nth-child(2),.device-scroll td:nth-child(3){white-space:nowrap}
+.device-scroll button{display:block;width:100%;min-height:44px;text-align:left;background:transparent;border:1px solid transparent;border-radius:6px;font:inherit;font-size:14px;line-height:1.3;color:var(--text);padding:5px 6px;cursor:pointer;overflow:hidden}
+.device-scroll button:hover{background:var(--hover)}
+.device-scroll button[aria-pressed="true"]{background:var(--btn-active);border-color:var(--accent)}
+.dev-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dev-ip{display:block;font-size:11px;color:var(--text-3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.network-focus.proxy-source .network{grid-template-columns:1fr}
+.network-focus.proxy-source .network-layout{grid-column:1/-1;display:flex;align-items:center;margin-top:10px}
+.network-focus.proxy-source .map-area{width:72%}
+.network-focus.proxy-source .network-numbers{width:28%;border-left:1px solid var(--line);border-top:0;padding:0 0 0 24px;margin-top:0;display:block}
+.network-focus.proxy-source .speed{margin:0 0 12px}
+.network-focus.proxy-source .speed strong{font-size:26px}
+.network-focus.proxy-source .connection-count{display:flex;text-align:left}
+.network-focus.proxy-source #traffic-chart{width:100%;height:54px;margin-top:6px}
+.network-focus.proxy-source #proxy-totals{margin:6px 0 0}
+.network-focus.proxy-source .network-bottom{margin-top:auto}
+@media(max-width:700px){
+.network-focus.proxy-source .network-layout{display:block}
+.network-focus.proxy-source .map-area{width:100%}
+.network-focus.proxy-source .network-numbers{width:100%;border:0;padding:18px 0 0;display:flex}
+}
+.network-focus main{display:none}
+.network-focus .network{height:calc(100vh - 76px);box-sizing:border-box;display:grid;grid-template-columns:1.02fr .98fr;grid-template-rows:auto auto 1fr auto;column-gap:26px;overflow:hidden;padding-top:14px;padding-bottom:12px}
+.network-focus .network-heading{grid-column:1/-1;grid-row:1}
+.network-focus .source-switch{grid-column:1/-1;grid-row:2;margin:6px 0 0}
+.network-focus .network-layout{grid-column:1;grid-row:3;display:block;margin-top:8px;min-height:0;align-self:start}
+.network-focus .map-area{width:100%}
+.network-focus #world-map{width:100%;height:auto;max-height:none}
+.network-focus .network-numbers{width:100%;border-left:0;border-top:1px solid var(--line);padding:10px 0 0;margin-top:8px;display:flex;flex-wrap:wrap;align-items:center;column-gap:18px}
+.network-focus .speed{margin:0;flex:1 1 0}
+.network-focus .speed strong{font-size:22px}
+.network-focus .connection-count{flex:0 0 auto;display:block;text-align:right}
+.network-focus .connection-count strong{font-size:22px}
+.network-focus #traffic-chart{flex:0 0 100%;width:100%;height:44px;margin-top:4px}
+.network-focus #proxy-totals{flex:0 0 100%;margin:2px 0 0}
+.network-focus .device-panel{grid-column:2;grid-row:3;margin:8px 0 0;border-top:0;padding-top:0;display:flex;flex-direction:column;min-height:0}
+.network-focus .device-scroll{flex:1 1 auto;max-height:none;overflow:auto}
+.network-focus .device-scroll table{font-size:13px}
+.network-focus .device-scroll button{min-height:40px;font-size:13px;padding:3px 5px}
+.network-focus .dev-ip{display:none}
+.network-focus .network-bottom{grid-column:1/-1;grid-row:4;margin-top:8px}
+.network-focus .network-heading h1{font-size:22px}
+.network-focus .network-heading p{font-size:12px;margin:1px 0}
+.network-focus .device-panel>.hint,.network-focus #proxy-note,.network-focus #network-scope{display:none}
+.network-focus .device-heading h2{font-size:17px}
+.network-focus #proxy-regions{font-size:13px;margin-bottom:2px;min-height:18px}
+@media(max-width:700px){
+.network{padding:24px 20px}
+.network-layout{display:block}
+.map-area{width:100%}
+.network-numbers{width:100%;border:0;padding:18px 0 0;display:flex;flex-wrap:wrap;align-items:center}
+.speed{width:38%;margin-bottom:12px}
+.speed strong{font-size:24px}
+.connection-count{width:24%;display:block}
+.network-numbers #traffic-chart{width:60%;height:48px;margin:0}
+.network-numbers #proxy-totals{width:40%;padding-left:12px}
+.map-legend{font-size:10px}
+.network-heading h1{font-size:24px}
+#map-filter{width:100%;margin-left:0}
+.device-scroll table,.device-scroll button{font-size:12px}
+.device-scroll th:nth-child(3),.device-scroll td:nth-child(3){display:none}
+.device-scroll th:first-child{width:58%}
+.device-scroll th:nth-child(2){width:42%}
+.device-scroll td{padding:2px 4px}
+.device-panel .hint{line-height:1.6}
+.network-focus .network{display:block;height:auto;overflow:visible}
+.network-focus #world-map{max-height:none}
+.network-focus .network-numbers{padding-left:0}
+.network-focus .speed strong{font-size:22px}
+.network-focus .device-scroll{max-height:260px}
+}
+@media(prefers-reduced-motion:reduce){.network *{scroll-behavior:auto}}

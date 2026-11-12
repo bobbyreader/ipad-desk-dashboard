@@ -1,0 +1,68 @@
+/* Single source of truth for both themes. Day is the default :root palette;
+   .night on <html> swaps every token. Canvas colours in network.js read these
+   same variables at runtime, so a theme change never needs a second colour table. */
+:root {
+  --bg: #f5ead6;
+  --panel: #fdf7ea;
+  --left-bg: #f0e3c9;
+  --card: #fdf7ea;
+  --card-active: #f8ecd2;
+  --line: #d8c4a1;
+  --line-soft: #e3d3b3;
+  --card-line: #d9c6a2;
+  --btn-line: #c1a982;
+  --line-muted: #c9b391;
+  --text: #3a3128;
+  --text-2: #5d5042;
+  --text-3: #6b5b45;
+  --text-4: #8a7860;
+  --accent: #b3642f;
+  --accent-2: #9a6b1f;
+  --link: #9a5a28;
+  --btn: #f1e3c8;
+  --btn-active: #ecd8b6;
+  --hover: #f3e6cd;
+  --input: #fffdf8;
+  --land: #dccaa8;
+  --coast: #bfa87f;
+  --sea: #f8efdb;
+  --grid: #e7d6b4;
+  --inactive: #c9b391;
+  --dot: #fffaf0;
+  --fade-0: rgba(245, 234, 214, 0);
+  --fade-1: #f5ead6;
+  --warn-bg: rgba(250, 243, 230, 0.94);
+}
+
+:root.night {
+  --bg: #182a3a;
+  --panel: #152b3d;
+  --left-bg: #203548;
+  --card: #203649;
+  --card-active: #2b4760;
+  --line: #405263;
+  --line-soft: #2e4558;
+  --card-line: #3f5669;
+  --btn-line: #668097;
+  --line-muted: #537b8e;
+  --text: #eaf0f4;
+  --text-2: #c5d4df;
+  --text-3: #a9c0cf;
+  --text-4: #93abbd;
+  --accent: #80d9df;
+  --accent-2: #e7bc80;
+  --link: #d4e7f6;
+  --btn: #2d465c;
+  --btn-active: #355e73;
+  --hover: #2a465b;
+  --input: #152737;
+  --land: #2b495b;
+  --coast: #4f7184;
+  --sea: #152b3d;
+  --grid: #294557;
+  --inactive: #537b8e;
+  --dot: #d5fcff;
+  --fade-0: rgba(24, 42, 58, 0);
+  --fade-1: #182a3a;
+  --warn-bg: rgba(24, 42, 58, 0.92);
+}

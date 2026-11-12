@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.deskboard.ipad</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/ABS/PATH/TO/ipad-desk-dashboard/.venv/bin/python</string>
+    <string>/ABS/PATH/TO/ipad-desk-dashboard/server.py</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>/ABS/PATH/TO/ipad-desk-dashboard</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/ABS/PATH/TO/ipad-desk-dashboard/logs/server.out.log</string>
+
+  <key>StandardErrorPath</key>
+  <string>/ABS/PATH/TO/ipad-desk-dashboard/logs/server.err.log</string>
+</dict>
+</plist>
